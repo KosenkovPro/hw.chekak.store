@@ -37,7 +37,9 @@ pub fn set_priority(pid: u32, priority: Priority) -> Result<(), Error> {
     };
     // SAFETY: setpriority с корректным pid и значением nice в диапазоне
     // [-20, 19]; при нехватке прав вернётся ошибка, а не изменение.
-    let status = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid as libc::pid_t, nice) };
+    // Второй аргумент — `id_t`, и на macOS это беззнаковый u32, поэтому pid
+    // передаётся как есть.
+    let status = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid, nice) };
     if status == 0 {
         return Ok(());
     }
