@@ -108,10 +108,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcpad-${{ matrix.target }}
+          # Пути в upload-artifact отсчитываются от корня репозитория, а
+          # собирать мы работаем в mcpad/ — поэтому путь с префиксом mcpad/.
           path: |
-            dist/*.zip
-            dist/*.tar.gz
-            dist/*.sha256
+            mcpad/dist/*.zip
+            mcpad/dist/*.tar.gz
+            mcpad/dist/*.sha256
           if-no-files-found: error
 
   release:
@@ -134,7 +136,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd artifacts
+          # Артефакты скачиваются в корень рабочего каталога, а не в mcpad/.
+          cd "$GITHUB_WORKSPACE/artifacts"
           files=$(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.sha256' \) -printf '%f\n' | sort)
           echo "Файлы релиза:"; echo "$files"
           notes=$(mktemp)
