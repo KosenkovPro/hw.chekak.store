@@ -17,6 +17,12 @@ const ACCESS_DENIED: i32 = -2147024891;
 
 /// Завершает процесс.
 pub fn terminate(pid: u32) -> Result<(), Error> {
+    // PID 0 — это «System Idle Process», его завершить нельзя.
+    if pid == 0 {
+        return Err(Error::Io(
+            "PID 0 — это системный процесс, его завершать нельзя".to_string(),
+        ));
+    }
     // SAFETY: OpenProcess с PROCESS_TERMINATE только открывает дескриптор и
     // сам процесс не меняет.
     let handle = unsafe { OpenProcess(PROCESS_TERMINATE, false, pid) }
@@ -86,5 +92,11 @@ mod tests {
             error,
             Error::Io(_) | Error::PermissionDenied(_) | Error::NotFound(_)
         ));
+    }
+
+    #[test]
+    fn idle_process_is_refused() {
+        assert!(terminate(0).is_err());
+        assert!(set_priority(0, Priority::Normal).is_err());
     }
 }
