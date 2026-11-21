@@ -108,7 +108,22 @@ jobs:
         working-directory: mcpad
         run: cargo run --release -p mcpad-cli -- bench --samples 5
 
-      - name: Модули процесса
+      - name: Модули процесса (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: mcpad
+        run: |
+          # В Git Bash PID транслируется в MSYS-вилку, поэтому на Windows
+          # берём нативный PID из PowerShell.
+          $capabilities = cargo run --release -p mcpad-cli -- capabilities
+          if ($capabilities -match 'process_modules\s+(full|partial)') {
+            cargo run --release -p mcpad-cli -- modules $PID
+          } else {
+            Write-Host "перечисление модулей на этой платформе не реализовано — это ожидаемо"
+          }
+
+      - name: Модули процесса (Unix)
+        if: runner.os != 'Windows'
         shell: bash
         working-directory: mcpad
         run: |

@@ -221,7 +221,7 @@ fn boot_time_unix() -> Option<u64> {
 
 fn hostname() -> Option<String> {
     let mut buffer = [0u8; 256];
-    let mut size = buffer.len();
+    let size = buffer.len();
     // SAFETY: буфер выделен на стеке, длина передаётся явно и соответствует буферу.
     let result = unsafe { libc::gethostname(buffer.as_mut_ptr() as *mut libc::c_char, size) };
     if result != 0 {

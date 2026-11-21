@@ -9,15 +9,14 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
-[dependencies]
+# Ядро, контракт проб и привязки Win32 нужны только под Windows: вне Windows
+# крейт собирается пустым, и cargo ругался бы на неиспользуемые зависимости.
+# Привязки `windows` к тому же существуют только на Windows: сам крейт помечен
+# `#![cfg(windows)]`, а его зависимость `windows-future` не собирается на
+# других системах — из-за этого падала сборка всего workspace в CI.
+[target.'cfg(windows)'.dependencies]
 mcpad-core.workspace = true
 mcpad-probe.workspace = true
-
-# Привязки Win32 существуют только на Windows: крейт `windows` целиком
-# помечен `#![cfg(windows)]`, а его зависимость `windows-future` не собирается
-# на других системах. Поэтому подключаем его только под нужную цель — иначе
-# сборка всего workspace на Linux и macOS падала бы.
-[target.'cfg(windows)'.dependencies]
 windows.workspace = true
 
 [lints]
