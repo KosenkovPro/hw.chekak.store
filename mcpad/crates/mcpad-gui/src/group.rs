@@ -104,17 +104,29 @@ impl<'a> Group<'a> {
 /// в конце, внутри одинаковых — по названию. Внутри группы порядок задаёт
 /// вызывающий код: он сортирует строки сам.
 pub fn group<'a>(rows: &[&'a ProcessInfo], by: GroupBy) -> Vec<Group<'a>> {
+    let known: HashMap<u32, &ProcessInfo> = rows
+        .iter()
+        .map(|process| (process.key.pid, *process))
+        .collect();
+    group_with(rows, by, &known)
+}
+
+/// Группирует процессы, зная всё дерево процессов.
+///
+/// Карта `known` нужна полной: если родитель процесса отфильтрован из
+/// списка, но известен по снимку, группа всё равно называется по нему, а не
+/// по «pid N».
+pub fn group_with<'a>(
+    rows: &[&'a ProcessInfo],
+    by: GroupBy,
+    known: &HashMap<u32, &ProcessInfo>,
+) -> Vec<Group<'a>> {
     if by == GroupBy::None {
         return vec![Group {
             label: String::new(),
             rows: rows.to_vec(),
         }];
     }
-
-    let known: HashMap<u32, &ProcessInfo> = rows
-        .iter()
-        .map(|process| (process.key.pid, *process))
-        .collect();
 
     let mut groups: Vec<Group<'a>> = Vec::new();
     let mut index: HashMap<String, usize> = HashMap::new();
@@ -123,7 +135,7 @@ pub fn group<'a>(rows: &[&'a ProcessInfo], by: GroupBy) -> Vec<Group<'a>> {
         let label = match by {
             GroupBy::None => String::new(),
             GroupBy::Application => {
-                let root = root_ancestor(&known, process.key.pid);
+                let root = root_ancestor(known, process.key.pid);
                 known
                     .get(&root)
                     .map(|root| root.name.clone())
@@ -310,6 +322,29 @@ mod tests {
         let processes = vec![first, second];
         let groups = group(&rows(&processes), GroupBy::Application);
         assert_eq!(groups.len(), 2);
+    }
+
+    #[test]
+    fn group_uses_full_tree_when_parents_are_filtered_out() {
+        // Родитель отфильтрован из списка, но известен по снимку: группа всё
+        // равно называется по его имени, а не «pid N».
+        let processes = [
+            process(1, "browser.exe", None, Some(5.0)),
+            process(2, "tab.exe", Some(1), Some(3.0)),
+        ];
+        let known: HashMap<u32, &ProcessInfo> = processes
+            .iter()
+            .map(|process| (process.key.pid, process))
+            .collect();
+        let visible: Vec<&ProcessInfo> = vec![&processes[1]];
+
+        let groups = group_with(&visible, GroupBy::Application, &known);
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].label, "browser.exe");
+
+        let groups = group_with(&visible, GroupBy::Parent, &known);
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].label, "browser.exe");
     }
 
     #[test]

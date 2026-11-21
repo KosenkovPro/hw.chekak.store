@@ -834,11 +834,16 @@ impl App {
             .filter(|process| parsed.matches(process))
             .collect();
 
+        // Карта процессов — полная, по снимку. Родители нужны и тем, кто
+        // отфильтрован из списка: иначе «скрыть системные» перестаёт видеть
+        // системное дерево, а группа называется «pid N».
+        let known: HashMap<u32, &ProcessInfo> = snapshot
+            .processes
+            .iter()
+            .map(|process| (process.key.pid, process))
+            .collect();
+
         if self.hide_system {
-            let known: HashMap<u32, &ProcessInfo> = rows
-                .iter()
-                .map(|process| (process.key.pid, *process))
-                .collect();
             rows.retain(|process| !group::is_system_process(process, &known));
         }
         for quick in &self.quick_filters {
@@ -922,7 +927,7 @@ impl App {
         let memory_total = snapshot.system.memory_total.value;
 
         // Группы: заголовок с итогами и процессы под ним.
-        let groups = group::group(&rows, self.group_by);
+        let groups = group::group_with(&rows, self.group_by, &known);
         let mut table_rows: Vec<table::TableRow> = Vec::with_capacity(rows.len() + groups.len());
         for group in &groups {
             if self.group_by != group::GroupBy::None {
