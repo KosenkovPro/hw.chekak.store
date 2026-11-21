@@ -1,0 +1,23 @@
+{
+  "name": "mcpad-dark",
+  "dark": true,
+  "palette": {
+    "background": "#14161a",
+    "surface": "#1b1f25",
+    "text": "#e6eaf0",
+    "muted": "#9aa6b4",
+    "accent": "#ff8a6b",
+    "ok": "#62d394",
+    "warning": "#e3b341",
+    "critical": "#ff5c5c",
+    "grid": "#232830",
+    "edge": "#4a5563"
+  },
+  "metrics": {
+    "row_height": 22.0,
+    "corner_radius": 8.0,
+    "font_scale": 1.0,
+    "node_radius": 6.0,
+    "grid_step": 32.0
+  }
+}

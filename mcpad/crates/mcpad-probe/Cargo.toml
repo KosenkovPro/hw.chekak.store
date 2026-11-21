@@ -1,0 +1,16 @@
+[package]
+name = "mcpad-probe"
+description = "Контракт проб MCPad: возможности платформы, деградация и сбор снимка"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+mcpad-core.workspace = true
+
+[lints]
+workspace = true

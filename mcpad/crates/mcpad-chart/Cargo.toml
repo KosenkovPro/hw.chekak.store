@@ -1,0 +1,18 @@
+[package]
+name = "mcpad-chart"
+description = "Графики MCPad: спокойные линии без лишних осей, шкалы и курсор"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+mcpad-series.workspace = true
+mcpad-theme.workspace = true
+egui.workspace = true
+
+[lints]
+workspace = true

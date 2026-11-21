@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Тег релиза (например v0.1.0)
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+defaults:
+  run:
+    working-directory: mcpad
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: .exe
+            archive: zip
+          - name: Linux x64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ""
+            archive: tar.gz
+          - name: Linux ARM64
+            os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            ext: ""
+            archive: tar.gz
+          - name: macOS ARM64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            ext: ""
+            archive: tar.gz
+          - name: macOS x64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+            ext: ""
+            archive: tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установить Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Кэш cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            mcpad/target
+          key: release-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: release-${{ matrix.target }}-
+
+      - name: Сборка CLI и окна
+        run: cargo build --release --target ${{ matrix.target }} -p mcpad-cli -p mcpad-gui
+
+      - name: Упаковка (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME
+          $dir = "dist/mcpad-$version-${{ matrix.target }}"
+          New-Item -ItemType Directory -Force -Path "$dir/themes" | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/mcpad.exe" "$dir/"
+          Copy-Item "target/${{ matrix.target }}/release/mcpad-gui.exe" "$dir/"
+          Copy-Item "crates/mcpad-gui/themes/*.json" "$dir/themes/"
+          $archive = "dist/mcpad-$version-${{ matrix.target }}.zip"
+          Compress-Archive -Path $dir -DestinationPath $archive
+          $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
+          "$hash  mcpad-$version-${{ matrix.target }}.zip" |
+            Out-File -FilePath "$archive.sha256" -Encoding ascii
+
+      - name: Упаковка (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          dir="dist/mcpad-$version-${{ matrix.target }}"
+          mkdir -p "$dir/themes"
+          cp "target/${{ matrix.target }}/release/mcpad" "$dir/"
+          cp "target/${{ matrix.target }}/release/mcpad-gui" "$dir/"
+          cp crates/mcpad-gui/themes/*.json "$dir/themes/"
+          archive="dist/mcpad-$version-${{ matrix.target }}.tar.gz"
+          tar -czf "$archive" -C dist "mcpad-$version-${{ matrix.target }}"
+          (cd dist && sha256sum "mcpad-$version-${{ matrix.target }}.tar.gz" > "mcpad-$version-${{ matrix.target }}.tar.gz.sha256")
+
+      - name: Загрузить артефакты
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpad-${{ matrix.target }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.sha256
+          if-no-files-found: error
+
+  release:
+    name: Релиз на GitHub
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Скачать артефакты
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Опубликовать релиз
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts
+          files=$(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.sha256' \) -printf '%f\n' | sort)
+          echo "Файлы релиза:"; echo "$files"
+          notes=$(mktemp)
+          {
+            echo "## MCPad $TAG"
+            echo
+            echo "Сборки CLI (\`mcpad\`) и окна (\`mcpad-gui\`) для пяти платформ."
+            echo
+            echo "### Что внутри"
+            echo
+            echo "* \`mcpad\` — командная строка: список процессов, снимок системы, подробности процесса, модули, возможности платформы, замер времени снимка;"
+            echo "* \`mcpad-gui\` — окно на egui: процессы, дерево, производительность, canvas-графы;"
+            echo "* \`themes/\` — образцы JSON-тем."
+            echo
+            echo "### Запуск"
+            echo
+            echo '```'
+            echo "mcpad list              # список процессов"
+            echo "mcpad list --json       # то же в JSON"
+            echo "mcpad info <pid>        # путь, командная строка, владелец"
+            echo "mcpad modules <pid>     # загруженные модули"
+            echo "mcpad capabilities       # что умеет текущая платформа"
+            echo "mcpad bench             # замер времени снимка"
+            echo '```'
+            echo
+            echo "### Проверка целостности"
+            echo
+            echo "Рядом с архивами лежат файлы \`.sha256\` — сверьте их командой \`sha256sum -c\`."
+            echo
+            echo "macOS-сборки не подписаны: первый запуск потребует подтверждения в Gatekeeper."
+          } > "$notes"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $files --clobber
+            gh release edit "$TAG" --notes-file "$notes" --title "MCPad $TAG"
+          else
+            gh release create "$TAG" $files --title "MCPad $TAG" --notes-file "$notes" --verify-tag
+          fi
+          echo "Готово: https://github.com/${{ github.repository }}/releases/tag/$TAG"

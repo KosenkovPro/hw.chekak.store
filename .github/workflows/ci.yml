@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "mcpad/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "mcpad/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+# Cargo workspace лежит в mcpad/, а воркфлоу — в корне репозитория.
+defaults:
+  run:
+    working-directory: mcpad
+
+jobs:
+  build:
+    name: ${{ matrix.os }} · ${{ matrix.profile }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        profile: [dev, release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установить Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Кэш cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            mcpad/target
+          key: ${{ matrix.os }}-${{ matrix.profile }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ matrix.os }}-${{ matrix.profile }}-
+
+      - name: Форматирование
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Тесты
+        run: cargo test --workspace --all-features
+
+      - name: Сборка
+        run: cargo build --workspace --profile ${{ matrix.profile }}
+
+  # Минимальная поддерживаемая версия Rust: ломает сборку, если в коде
+  # появится что-то новее заявленного MSRV.
+  msrv:
+    name: MSRV 1.99
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установить Rust 1.99
+        uses: dtolnay/rust-toolchain@1.99
+
+      - name: Проверка сборки на MSRV
+        working-directory: mcpad
+        run: cargo check --workspace --all-targets --locked
+
+  # Дымовой прогон CLI на всех трёх ОС: собираем один раз и запускаем
+  # команды, которые читают данные о процессах.
+  smoke:
+    name: ${{ matrix.os }} · CLI вживую
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установить Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Сборка CLI
+        working-directory: mcpad
+        run: cargo build --release -p mcpad-cli
+
+      - name: Список процессов (JSON)
+        working-directory: mcpad
+        run: cargo run --release -p mcpad-cli -- list --json --limit 5
+
+      - name: Возможности платформы
+        working-directory: mcpad
+        run: cargo run --release -p mcpad-cli -- capabilities
+
+      - name: Замер времени снимка
+        working-directory: mcpad
+        run: cargo run --release -p mcpad-cli -- bench --samples 5
+
+      - name: Модули процесса
+        shell: bash
+        working-directory: mcpad
+        run: |
+          # Перечисление модулей есть не на всех платформах: сначала смотрим,
+          # что платформа вообще его поддерживает, и только тогда пробуем.
+          if cargo run --release -p mcpad-cli -- capabilities | grep -qE 'process_modules +(full|partial)'; then
+            cargo run --release -p mcpad-cli -- modules $$
+          else
+            echo "перечисление модулей на этой платформе не реализовано — это ожидаемо"
+          fi

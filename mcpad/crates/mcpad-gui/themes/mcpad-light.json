@@ -1,0 +1,23 @@
+{
+  "name": "mcpad-light",
+  "dark": false,
+  "palette": {
+    "background": "#f6f7f9",
+    "surface": "#ffffff",
+    "text": "#16191d",
+    "muted": "#5b6472",
+    "accent": "#c2410c",
+    "ok": "#1f9254",
+    "warning": "#a16207",
+    "critical": "#b91c1c",
+    "grid": "#d9dee5",
+    "edge": "#b9c2cd"
+  },
+  "metrics": {
+    "row_height": 22.0,
+    "corner_radius": 6.0,
+    "font_scale": 1.0,
+    "node_radius": 4.0,
+    "grid_step": 32.0
+  }
+}

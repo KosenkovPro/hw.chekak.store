@@ -1,0 +1,24 @@
+[package]
+name = "mcpad-backends-windows"
+description = "Источник данных MCPad для Windows: NtQuerySystemInformation и сведения о процессах"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+mcpad-core.workspace = true
+mcpad-probe.workspace = true
+
+# Привязки Win32 существуют только на Windows: крейт `windows` целиком
+# помечен `#![cfg(windows)]`, а его зависимость `windows-future` не собирается
+# на других системах. Поэтому подключаем его только под нужную цель — иначе
+# сборка всего workspace на Linux и macOS падала бы.
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+
+[lints]
+workspace = true

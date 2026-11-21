@@ -1,0 +1,7 @@
+# Toolchain проекта MCPad.
+# Канал stable; целевой MSRV — 1.99.1 (см. DEVELOPMENT_PLAN.md, §9, D1).
+# Фиксируется на конкретную версию перед первым публичным релизом.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

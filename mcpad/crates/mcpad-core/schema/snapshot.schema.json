@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hw.chekak.store/schema/mcpad/snapshot-1.json",
+  "title": "MCPad snapshot",
+  "description": "Формат снимка системы MCPad. Неизвестные значения сериализуются как null и никогда как 0.",
+  "type": "object",
+  "required": ["schema_version", "taken_at_unix_ms", "system", "processes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "taken_at_unix_ms": { "type": "integer", "minimum": 0 },
+    "system": { "$ref": "#/$defs/system" },
+    "processes": { "type": "array", "items": { "$ref": "#/$defs/process" } }
+  },
+  "$defs": {
+    "counter": {
+      "type": "object",
+      "required": ["value"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["number", "string", "boolean", "null"] },
+        "source": { "type": "string" },
+        "confidence": { "enum": ["measured", "inferred", "estimated"] },
+        "unavailable_reason": {
+          "enum": [
+            "not_supported",
+            "requires_elevation",
+            "process_protected",
+            "no_such_device",
+            "counter_not_exposed",
+            "not_measured",
+            "stale",
+            "read_failed"
+          ]
+        }
+      }
+    },
+    "system": {
+      "type": "object",
+      "required": [
+        "os_name",
+        "os_version",
+        "arch",
+        "logical_cpus",
+        "cpu_percent",
+        "memory_total",
+        "memory_available",
+        "pagefile_total"
+      ],
+      "properties": {
+        "hostname": { "type": ["string", "null"] },
+        "os_name": { "type": "string" },
+        "os_version": { "type": "string" },
+        "arch": { "type": "string" },
+        "logical_cpus": { "type": "integer", "minimum": 0 },
+        "boot_time_unix": { "type": ["integer", "null"] },
+        "cpu_percent": { "$ref": "#/$defs/counter" },
+        "memory_total": { "$ref": "#/$defs/counter" },
+        "memory_available": { "$ref": "#/$defs/counter" },
+        "pagefile_total": { "$ref": "#/$defs/counter" }
+      }
+    },
+    "process": {
+      "type": "object",
+      "required": ["key", "name", "cpu_percent", "memory_working_set"],
+      "properties": {
+        "key": {
+          "type": "object",
+          "required": ["pid"],
+          "properties": {
+            "pid": { "type": "integer", "minimum": 0 },
+            "start_time_unix": { "type": ["integer", "null"] },
+            "boot_id": { "type": ["integer", "null"] }
+          }
+        },
+        "name": { "type": "string" },
+        "exe_path": { "type": ["string", "null"] },
+        "command_line": { "type": ["string", "null"] },
+        "parent_pid": { "type": ["integer", "null"] },
+        "user": { "type": ["string", "null"] },
+        "cpu_time_total": { "$ref": "#/$defs/counter" },
+        "cpu_percent": { "$ref": "#/$defs/counter" },
+        "memory_working_set": { "$ref": "#/$defs/counter" },
+        "memory_private": { "$ref": "#/$defs/counter" },
+        "thread_count": { "$ref": "#/$defs/counter" },
+        "handle_count": { "$ref": "#/$defs/counter" },
+        "io_read_bytes": { "$ref": "#/$defs/counter" },
+        "io_write_bytes": { "$ref": "#/$defs/counter" },
+        "is_protected": { "type": ["boolean", "null"] }
+      }
+    }
+  }
+}

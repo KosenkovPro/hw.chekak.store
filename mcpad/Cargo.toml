@@ -1,0 +1,66 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/mcpad-core",
+    "crates/mcpad-series",
+    "crates/mcpad-probe",
+    "crates/mcpad-backends/windows",
+    "crates/mcpad-backends/linux",
+    "crates/mcpad-backends/macos",
+    "crates/mcpad-sampler",
+    "crates/mcpad-chart",
+    "crates/mcpad-cli",
+    "crates/mcpad-theme",
+    "crates/mcpad-canvas",
+    "crates/mcpad-gui",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+license = "MIT OR Apache-2.0"
+authors = ["Ivan Kosenkov <dev@hw.chekak.store>"]
+repository = "https://github.com/KosenkovPro/hw.chekak.store"
+
+[workspace.dependencies]
+mcpad-core = { path = "crates/mcpad-core" }
+mcpad-series = { path = "crates/mcpad-series" }
+mcpad-probe = { path = "crates/mcpad-probe" }
+mcpad-backends-windows = { path = "crates/mcpad-backends/windows" }
+mcpad-backends-linux = { path = "crates/mcpad-backends/linux" }
+mcpad-backends-macos = { path = "crates/mcpad-backends/macos" }
+mcpad-sampler = { path = "crates/mcpad-sampler" }
+mcpad-chart = { path = "crates/mcpad-chart" }
+mcpad-theme = { path = "crates/mcpad-theme" }
+mcpad-canvas = { path = "crates/mcpad-canvas" }
+
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.145"
+clap = { version = "4.6.7", features = ["derive"] }
+# Фиксируем набор API Windows явно: без этих features части привязок
+# (память, системная информация) выпадают из сборки.
+windows = { version = "0.62.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_ProcessStatus",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+] }
+libc = "0.2"
+eframe = "0.37.0"
+egui = "0.37.0"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+undocumented_unsafe_blocks = "warn"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true

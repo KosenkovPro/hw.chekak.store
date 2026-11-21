@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Сравнение диспетчеров задач — hw.chekak.store</title>
+<meta name="description" content="Подробное сравнение System Informer, Task Explorer, RustWTM и gputaskman: ключевые различия, матрица возможностей и что взять на вооружение для hw.chekak.store." />
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --border: #d9dee5;
+    --border-strong: #b9c2cd;
+    --text: #16191d;
+    --text-soft: #5b6472;
+    --accent: #b4331f;
+    --accent-soft: #fdecea;
+    --ok: #1f7a44;
+    --ok-soft: #e6f4ec;
+    --part: #9a6700;
+    --part-soft: #fdf5e0;
+    --no: #7b8794;
+    --no-soft: #eef0f3;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .06);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --surface: #161b21;
+      --surface-2: #1d242c;
+      --border: #2a323b;
+      --border-strong: #3b4652;
+      --text: #e8edf3;
+      --text-soft: #9aa6b4;
+      --accent: #ff8a6b;
+      --accent-soft: #2a1a17;
+      --ok: #62d394;
+      --ok-soft: #14251c;
+      --part: #e3b341;
+      --part-soft: #2a2314;
+      --no: #8d99a6;
+      --no-soft: #1c222a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 24px 72px; }
+
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(1100px 320px at 12% -10%, var(--accent-soft), transparent 65%),
+      var(--surface);
+    padding: 48px 0 36px;
+    margin-bottom: 28px;
+  }
+  header.hero .wrap { padding-bottom: 0; }
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: .14em; font-size: 12px;
+    font-weight: 700; color: var(--accent); margin: 0 0 10px;
+  }
+  h1 { font-size: clamp(28px, 4vw, 44px); line-height: 1.15; margin: 0 0 12px; }
+  .lede { font-size: 18px; color: var(--text-soft); max-width: 92ch; margin: 0 0 20px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-block; padding: 4px 11px; border-radius: 999px; font-size: 13px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-soft);
+  }
+  .chip a { color: inherit; text-decoration: none; }
+  .chip a:hover { color: var(--accent); }
+
+  nav.toc {
+    position: sticky; top: 0; z-index: 30; background: var(--bg);
+    border-bottom: 1px solid var(--border); margin-bottom: 32px;
+  }
+  nav.toc .wrap { display: flex; gap: 6px; overflow-x: auto; padding-top: 10px; padding-bottom: 10px; }
+  nav.toc a {
+    white-space: nowrap; text-decoration: none; color: var(--text-soft);
+    font-size: 14px; padding: 6px 11px; border-radius: 8px;
+  }
+  nav.toc a:hover { background: var(--surface-2); color: var(--text); }
+
+  section { margin: 0 0 48px; scroll-margin-top: 64px; }
+  h2 {
+    font-size: 26px; margin: 0 0 6px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+  }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  h3 { font-size: 19px; margin: 30px 0 10px; }
+  h4 { font-size: 15px; margin: 20px 0 6px; color: var(--text-soft); text-transform: uppercase; letter-spacing: .06em; }
+  p { max-width: 100ch; }
+  .sub { color: var(--text-soft); margin: 12px 0 20px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .card h3 { margin-top: 0; }
+  .card ul { margin: 10px 0 0; padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+  .tag {
+    display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px;
+    border-radius: 6px; margin-bottom: 10px;
+  }
+  .tag.mit { background: var(--ok-soft); color: var(--ok); }
+  .tag.gpl { background: var(--accent-soft); color: var(--accent); }
+
+  .tablebox {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: auto; max-height: none;
+  }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14.5px; }
+  th, td { padding: 11px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+  thead th {
+    position: sticky; top: 0; z-index: 10; background: var(--surface-2);
+    font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-soft);
+    border-bottom: 2px solid var(--border-strong); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: var(--surface-2); }
+  tr.key td { background: var(--accent-soft); }
+  tr.key:hover td { background: var(--accent-soft); filter: brightness(.985); }
+  td.rowhead, th.rowhead {
+    position: sticky; left: 0; z-index: 5; background: var(--surface);
+    font-weight: 650; min-width: 200px; max-width: 260px;
+    border-right: 1px solid var(--border);
+  }
+  thead th.rowhead { z-index: 15; background: var(--surface-2); }
+  tr.key td.rowhead { background: var(--accent-soft); }
+  tbody tr:hover td.rowhead { background: var(--surface-2); }
+  .proj-col { min-width: 230px; }
+  td ul { margin: 0; padding-left: 17px; }
+  td li { margin-bottom: 4px; }
+  td strong { font-weight: 650; }
+
+  .mark { font-weight: 700; text-align: center; font-size: 15px; }
+  .yes { color: var(--ok); }
+  .part { color: var(--part); }
+  .no { color: var(--no); }
+  td.mark-cell { text-align: center; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 12px 0 18px; font-size: 14px; color: var(--text-soft); }
+  .legend span b { color: var(--text); }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: var(--radius); padding: 18px 22px; box-shadow: var(--shadow);
+  }
+  .callout p { margin: 0 0 10px; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout ul { margin: 0; padding-left: 20px; }
+  .callout li { margin-bottom: 8px; }
+
+  details {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0 22px; margin: 12px 0; box-shadow: var(--shadow);
+  }
+  details[open] { padding-bottom: 16px; }
+  summary {
+    cursor: pointer; padding: 16px 0; font-weight: 650; font-size: 17px; list-style: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; color: var(--accent); transition: transform .15s; display: inline-block; }
+  details[open] summary::before { transform: rotate(90deg); }
+  summary a { color: var(--text-soft); font-weight: 400; font-size: 13px; margin-left: auto; }
+
+  .foot {
+    margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--border);
+    color: var(--text-soft); font-size: 14px;
+  }
+  .foot code, code.inline {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px;
+    padding: 1px 6px; font-size: 13px;
+  }
+  .foot a, .sub a, p a, li a { color: var(--accent); }
+  .foot ul { padding-left: 20px; }
+  .note { font-size: 14px; color: var(--text-soft); }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 0 14px 48px; }
+    header.hero { padding: 32px 0 26px; }
+    td.rowhead, th.rowhead { min-width: 140px; max-width: 160px; font-size: 13.5px; }
+    th, td { padding: 9px 11px; }
+  }
+  @media print {
+    body { background: #fff; }
+    nav.toc { display: none; }
+    .tablebox { box-shadow: none; }
+    tr { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">hw.chekak.store · ЧёКак Железо</p>
+    <h1>Четыре диспетчера задач для Windows: подробное сравнение</h1>
+    <p class="lede">
+      System Informer, Task Explorer, RustWTM и gputaskman — разбор всего функционала, честная таблица ключевых
+      различий и матрица возможностей. Материал собран по исходному коду и README локальных клонов
+      (дата среза: 18 ноября 2026).
+    </p>
+    <div class="meta">
+      <span class="chip">Разбор: <code class="inline">../systeminformer</code></span>
+      <span class="chip">Разбор: <code class="inline">../TaskExplorer</code></span>
+      <span class="chip">Разбор: <code class="inline">../RustWTM</code></span>
+      <span class="chip">Разбор: <code class="inline">../gputaskman</code></span>
+      <span class="chip"><a href="README.md">README.md проекта ↗</a></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#summary">Коротко</a>
+    <a href="#main-table">Главная таблица</a>
+    <a href="#projects">По проектам</a>
+    <a href="#axes">По осям</a>
+    <a href="#matrix">Матрица возможностей</a>
+    <a href="#takeaways">Что взять</a>
+    <a href="#choose">Как выбрать</a>
+    <a href="#method">Методика</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<section id="summary">
+  <h2><span class="num">01</span>Коротко: кто есть кто</h2>
+  <p class="sub">Четыре инструмента решают разные задачи и почти не пересекаются функционально.</p>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag mit">MIT</span>
+      <h3>System Informer</h3>
+      <p><strong><a href="https://github.com/winsiderss/systeminformer">winsiderss/systeminformer</a></strong> — «глубокий» системный инструмент: собственный kernel-драйвер, десятки панелей, плагины.</p>
+      <ul>
+        <li>Дерево процессов, скрытые процессы, поиск по объектам</li>
+        <li>Потоки, стеки, кучи, хэндлы, пулы ядра, драйверы</li>
+        <li>Редактор памяти, delay-load hook, работа со службами</li>
+        <li>12 плагинов, портативный запуск</li>
+      </ul>
+      <p class="note">Слабое место: нет CLI, автоматизации, удалёнки и AI.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag gpl">GPL-3.0</span>
+      <h3>Task Explorer</h3>
+      <p><strong><a href="https://github.com/DavidXanatos/TaskExplorer">DavidXanatos/TaskExplorer</a></strong> — Qt 6 GUI поверх PHlib и драйвера System Informer.</p>
+      <ul>
+        <li>~20 панелей процесса, включая Memory Editor и инъекцию DLL</li>
+        <li><strong>Нативный Linux</strong>: cgroup, LSM, PSI, systemd, ELF core-дампы</li>
+        <li><strong>Удалённый мониторинг</strong>: TaskServer / TaskRemote, кластер, Window Agents</li>
+        <li>Wine-интеграция на Linux</li>
+      </ul>
+      <p class="note">Слабое место: copyleft-лицензия и отсутствие скриптования.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag mit">MIT</span>
+      <h3>RustWTM</h3>
+      <p><strong><a href="https://github.com/RustWTM/RustWTM">RustWTM/RustWTM</a></strong> — GUI + CLI + служба под SYSTEM: единственный, кто вмешивается в систему по правилам.</p>
+      <ul>
+        <li>Governor: троттлинг, memory guard, лимиты CPU/RAM, kill-list, IFEO-блок</li>
+        <li>Правила и конфиг TOML, порты, Docker, Telegram-бот</li>
+        <li>AI-ассистент (11 провайдеров + локальные) и MCP-сервер</li>
+        <li>27 языков, замена Ctrl+Shift+Esc</li>
+      </ul>
+      <p class="note">Слабое место: только Windows, служба SYSTEM, статус early release.</p>
+    </div>
+
+    <div class="card">
+      <span class="tag mit">MIT</span>
+      <h3>gputaskman</h3>
+      <p><strong><a href="https://github.com/shanselman/gputaskman">shanselman/gputaskman</a></strong> — «htop для GPU»: отвечает на вопрос «кто съел видеопамять и что это за модель».</p>
+      <ul>
+        <li>VRAM по процессам: Local / Shared / Paged, движки 3D-Compute-Video</li>
+        <li>Температуры, питание, такты, троттлинг, PCIe, multi-GPU</li>
+        <li>Распознавание LLM-моделей, весов и KV-кэша с уровнями доказательства</li>
+        <li>Windows, Linux, WSL, macOS; <code class="inline">diff</code>/<code class="inline">record</code>/<code class="inline">replay</code></li>
+      </ul>
+      <p class="note">Слабое место: только терминал и только чтение.</p>
+    </div>
+  </div>
+</section>
+
+<section id="main-table">
+  <h2><span class="num">02</span>Главная таблица: в чём ключевая разница</h2>
+  <p class="sub">Строки с акцентом — именно те различия, которые обычно решают выбор.</p>
+
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr>
+          <th class="rowhead">Критерий</th>
+          <th class="proj-col">System Informer</th>
+          <th class="proj-col">Task Explorer</th>
+          <th class="proj-col">RustWTM</th>
+          <th class="proj-col">gputaskman</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="key">
+          <td class="rowhead">Тип продукта</td>
+          <td>Инструмент анализа и отладки</td>
+          <td>Расширенный диспетчер процессов</td>
+          <td>Диспетчер + сервис-губернатор</td>
+          <td>GPU-монитор в терминале</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Интерфейс</td>
+          <td>Desktop GUI (Win32)</td>
+          <td>Desktop GUI (Qt 6)</td>
+          <td>Desktop GUI (egui, стиль Windows 11)</td>
+          <td>TUI (Textual) + <code class="inline">--once</code>/<code class="inline">--json</code></td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">Платформы</td>
+          <td>Windows 7+, x86/x64</td>
+          <td><strong>Windows + Linux</strong> (x64/ARM64), Wine, удалённые хосты</td>
+          <td>Только Windows 10 1809+/11, x64</td>
+          <td><strong>Windows, Linux, WSL, macOS</strong> (Apple Silicon)</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Лицензия</td>
+          <td>MIT</td>
+          <td><strong>GPL-3.0</strong> (copyleft)</td>
+          <td>MIT</td>
+          <td>MIT</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Стек</td>
+          <td>C, kernel-драйвер KPH</td>
+          <td>C++ / Qt 6</td>
+          <td>Rust (egui) + .NET-провайдер</td>
+          <td>Python 3.11+ / Textual</td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">Ядро / драйвер</td>
+          <td>Свой <code class="inline">systeminformer.sys</code></td>
+          <td>Тот же драйвер SI + библиотека PHlib</td>
+          <td>Драйвер не нужен; служба под SYSTEM</td>
+          <td>Не нужен; user-mode API (WDDM / NVML / DRM / Metal)</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Фоновый сервис</td>
+          <td>Нет</td>
+          <td><code class="inline">TaskHelper.exe</code> + удалённый <code class="inline">TaskServer</code></td>
+          <td><strong><code class="inline">wtm-service</code></strong> (LocalSystem, named pipe, протокол 17)</td>
+          <td>Нет</td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">Дерево процессов</td>
+          <td>✔ календарь, группы, вкладки колонок</td>
+          <td>✔ дерево/список, история, фильтры</td>
+          <td>✔ List / Tree / Apps (строка на приложение)</td>
+          <td>✖ плоский список + полоса потоков</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Инспекция процесса</td>
+          <td>~30 панелей: потоки, стеки, модули, память, хэндлы, сокеты, токен, окружение, пул, .NET, GDI, Job, мидump</td>
+          <td>~20 панелей: Thread/Stack, Memory+редактор, Handles, Sockets (ETW), Modules (инъекция), Token, Environment, Windows, GDI, .NET, Heap, Job, Debug, Sandboxie</td>
+          <td>~12 панелей: токен, окружение, хэндлы, карта памяти, модули с подписями, окна, цепочки ожидания</td>
+          <td>GPU-часть процесса: VRAM, движки, рантайм, модель, локальный API</td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">VRAM по процессам</td>
+          <td>◐ через плагин <code class="inline">ExtendedTools</code></td>
+          <td>◐ отдельная GPU-панель</td>
+          <td>◐ dedicated/shared по процессам</td>
+          <td><strong>✔ ядро продукта</strong>: Local / Shared / Paged, без двойного счёта DWM</td>
+        </tr>
+        <tr>
+          <td class="rowhead">GPU: обзор устройства</td>
+          <td>✔ графики</td>
+          <td>✔ отдельная GPU-панель</td>
+          <td>✔ своя страница на каждый GPU</td>
+          <td>✔ VRAM / load / темп / питание / такт / PCIe / вентилятор</td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">Температуры и датчики</td>
+          <td>◐ плагин <code class="inline">HardwareDevices</code></td>
+          <td>◐ общий HW</td>
+          <td><strong>✔</strong> температуры, RPM, питание, напряжение, такты, кривые, пресеты</td>
+          <td><strong>✔</strong> температура, питание, такты, троттлинг, активность памяти</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Оперативная память</td>
+          <td>✔ сводка + детали процесса</td>
+          <td>✔ панель RAM</td>
+          <td>✔ composition (in use / modified / standby / free / пулы), тренды, утечки</td>
+          <td>◐ панель System + колонки RAM и CPU% (working set, не private)</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Диск и сеть</td>
+          <td>✔ плагин <code class="inline">ExtendedTools</code> (нужен админ)</td>
+          <td>✔ Disk / Network / DNS / RPC</td>
+          <td>✔ ETW-активность файлов, сеть по процессам, анализ диска, порты</td>
+          <td>✖ вне профиля</td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">Управление процессами</td>
+          <td>✔ завершение, приостановка, приоритет, affinity, хэндлы, службы, редактор памяти</td>
+          <td>✔ + создание служб, инъекция/выгрузка DLL, freeze, блок запуска</td>
+          <td><strong>✔ +</strong> governor, лимиты CPU/RAM, kill-list, паника, IFEO-блок, trim</td>
+          <td>✖ только чтение</td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">Автоматизация</td>
+          <td>✖ GUI + плагины</td>
+          <td>✖ GUI</td>
+          <td><strong>✔</strong> CLI <code class="inline">wtm</code>, конфиг TOML, правила, IFEO, порты</td>
+          <td><strong>✔</strong> <code class="inline">--json</code>, <code class="inline">diff</code>, <code class="inline">record</code>, <code class="inline">replay</code>, <code class="inline">summary</code></td>
+        </tr>
+        <tr class="key">
+          <td class="rowhead">AI / MCP</td>
+          <td>✖</td>
+          <td>✖</td>
+          <td><strong>✔</strong> ассистент (11 провайдеров + локальные модели) и MCP-сервер с 20+ инструментами</td>
+          <td>✖ (только локальные API рантаймов)</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Удалённый мониторинг</td>
+          <td>✖</td>
+          <td><strong>✔</strong> TaskServer/TaskRemote, несколько машин, кластер, Window Agents</td>
+          <td>◐ Telegram-бот: статусы и действия с телефона</td>
+          <td>✖</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Расширяемость</td>
+          <td><strong>✔</strong> 12 плагинов + API</td>
+          <td>◐ внутренняя архитектура PHlib</td>
+          <td>◐ конфиг и MCP-инструменты</td>
+          <td>◐ Python-модули без публичного API</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Скриптование / экспорт</td>
+          <td>◐ ETW, плагины</td>
+          <td>◐ удалённый API, ETW</td>
+          <td><strong>✔</strong> JSON из CLI, MCP, конфиг</td>
+          <td><strong>✔</strong> JSON / JSONL, diff, offline replay</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Локализация</td>
+          <td>✔ мультиязычность</td>
+          <td>✔ Qt Linguist</td>
+          <td>✔ <strong>27 языков</strong>, включая русский</td>
+          <td>✖ английский</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Приватность</td>
+          <td>Локально, телеметрии нет</td>
+          <td>Локально, но удалённый сервер = сетевой доступ</td>
+          <td>Служба SYSTEM, правила и блокировки; AI-ключи под DPAPI</td>
+          <td>Локально, телеметрии нет; в JSON видны пути, cmdline, модели, порты</td>
+        </tr>
+        <tr>
+          <td class="rowhead">Зрелость</td>
+          <td>Высокая, база с 2009 г.</td>
+          <td>Высокая, активно развивается</td>
+          <td>Средняя: 0.35.0, early release, много «границ»</td>
+          <td>Средняя: 0.4.4, часть путей только на фикстурах</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="projects">
+  <h2><span class="num">03</span>Подробно по каждому проекту</h2>
+  <p class="sub">Особенности, сильные стороны и ограничения — то, что важно при выборе.</p>
+
+  <details open>
+    <summary>System Informer <span class="tag mit" style="margin:0">MIT</span> <a href="https://github.com/winsiderss/systeminformer" target="_blank" rel="noopener">github.com/winsiderss/systeminformer</a></summary>
+    <p>Продолжение линейки Process Hacker / Process Explorer от Winsider Seminars &amp; Solutions. Не «красивый монитор», а системный инструмент: собственный kernel-драйвер <code class="inline">systeminformer.sys</code> (KPH) даёт то, чего не даёт обычный Win32 API.</p>
+    <h4>Что умеет</h4>
+    <ul>
+      <li><strong>Дерево процессов</strong> с календарём запуска, группами, вкладками колонок, скрытыми процессами, поиском скрытых и уже завершённых процессов.</li>
+      <li><strong>~30 панелей процесса</strong> (по именам исходников): потоки и стеки, память + редактор + поиск строк, модули, хэндлы, сокеты, службы (создание и управление), токен, окружение, Job-объекты, mitigation-политики, кучи, GDI/USER, NT-объекты, пулы ядра, сессии и пользователи, дампы памяти и мини-дампы, отладочная консоль, delay-load hook.</li>
+      <li><strong>Обзор системы</strong>: графики CPU, памяти, ввода-вывода, страницы производительности по процессам, дискам, сети и GPU.</li>
+      <li><strong>12 плагинов</strong>: WindowExplorer (окна, UIA, DWM-атрибуты), ExtendedTools (диск/сеть, нужен админ), ExtendedServices, NetworkTools, HardwareDevices, AgentTools, DotNetTools, OnlineChecks, Updater, UserNotes, ToolStatus, ExtendedNotifications.</li>
+      <li>Портативный запуск с флешки, настройки рядом с exe.</li>
+    </ul>
+    <h4>Ограничения</h4>
+    <ul>
+      <li>Нет ни CLI, ни скриптования, ни удалённого режима, ни AI/MCP — только интерактивный GUI.</li>
+      <li>Видеопамять по процессам — только через <code class="inline">ExtendedTools</code>, без модельного анализа.</li>
+    </ul>
+    <p class="note">Брать для: разбор инцидентов, «кто держит файл/хэндл», работа с драйверами и службами, реверс поведения процесса.</p>
+  </details>
+
+  <details>
+    <summary>Task Explorer <span class="tag gpl" style="margin:0">GPL-3.0</span> <a href="https://github.com/DavidXanatos/TaskExplorer" target="_blank" rel="noopener">github.com/DavidXanatos/TaskExplorer</a></summary>
+    <p>Qt 6 GUI поверх PHlib из Process Hacker и собственной сборки <code class="inline">systeminformer.sys</code>. Прямой конкурент System Informer, но с современным UI и заметно расширенной кроссплатформенностью.</p>
+    <h4>Что умеет</h4>
+    <ul>
+      <li><strong>Панели процесса</strong>: Thread + stack view, Memory (редактор памяти и поиск строк), Handles, Sockets (скорость передачи, псевдо-UDP по ETW), Modules (выгрузка и <strong>инъекция DLL</strong>), Token, Environment, Windows, GDI, .NET, Heap, Job, Security, Debug, Sandboxie.</li>
+      <li><strong>Системные панели</strong>: CPU, RAM, Disk, Network, <strong>GPU</strong>, DNS-кэш, RPC-эндпоинты, Services, Drivers, System info.</li>
+      <li><strong>Инструменты</strong>: поиск окон перетаскиванием «прицела», Run / Run as, создание службы, окно драйвера с обновлением DynData, онлайн-апдейтер, mini-dump helper, свой редактор разрешений.</li>
+      <li><strong>Linux — нативный бэкенд</strong>, а не слой совместимости: <code class="inline">/proc</code>, <code class="inline">sock_diag</code>, systemd через D-Bus, стеки через libdwfl с <code class="inline">file:line</code>. Панели <strong>Control Group</strong> (cgroup: cpu/memory/io/pids и лимиты) и <strong>Security</strong> (AppArmor/SELinux, seccomp, capabilities), график <strong>Pressure (PSI)</strong>, вкладка <strong>Daemons</strong>, реальные ELF core-дампы. Windows-панели Token/Job/GDI/.NET/RPC/Pool/Atom на Linux выключены на уровне сборки.</li>
+      <li><strong>Удалённый мониторинг (2.0.0)</strong>: <code class="inline">TaskServer</code> + <code class="inline">TaskRemote</code>, кроссплатформенные соединения, несколько машин, кластерный режим, аутентификация, обнаружение серверов в локальной сети, <strong>Window Agents</strong> для чужих сессий. Требует сертификат поддержки.</li>
+      <li><strong>Wine-интеграция</strong> на Linux: имена процессов, хэндлы, окна, токены, Windows PID.</li>
+    </ul>
+    <h4>Ограничения</h4>
+    <ul>
+      <li><strong>GPL-3.0</strong> — код нельзя закрыть под проприетарной лицензией; для MIT-проекта это главный юридический риск при копировании.</li>
+      <li>Нет CLI, MCP/AI и автоматизации — всё через GUI.</li>
+      <li>VRAM и движки показаны, но без семантики <code class="inline">Local</code>/<code class="inline">Non-local</code> и без оценки <code class="inline">Paged</code>.</li>
+    </ul>
+    <p class="note">Брать для: GUI-мониторинг «всё про процесс» на Windows <em>и</em> Linux, удалённый мониторинг нескольких машин.</p>
+  </details>
+
+  <details>
+    <summary>RustWTM <span class="tag mit" style="margin:0">MIT</span> <a href="https://github.com/RustWTM/RustWTM" target="_blank" rel="noopener">github.com/RustWTM/RustWTM</a></summary>
+    <p>«Диспетчер задач, который сохраняет твой ПК отзывчивым». Три исполняемых файла: GUI <code class="inline">rustwtm.exe</code>, CLI <code class="inline">wtm.exe</code>, служба <code class="inline">wtm-service.exe</code> (LocalSystem, IPC <code class="inline">\\.\pipe\RustWTM</code>, протокол 17). Rust + egui, опциональный аппаратный провайдер на .NET 8+.</p>
+    <h4>Процессы и инспекция</h4>
+    <ul>
+      <li>Режимы List / Tree / Apps (одна строка на приложение — действует на все его процессы), раскладки колонок, панель деталей, быстрые фильтры, заморозка списка (F6).</li>
+      <li>Графики CPU (по каждому логическому процессору), памяти, GPU, сети, диска; <strong>отдельная страница на каждое устройство</strong> с температурами, NVMe wear, MAC-адресами, Wi-Fi.</li>
+      <li>Timeline 1/2/5 минут с курсором, зумом и честными «пробелами» в данных; App history, Users, Services, Network, Events, Startup apps, спецификация железа.</li>
+      <li>Диагностика: статус «Not responding», <strong>Analyze wait chain</strong> между процессами с поиском дедлоков, «почему не завершается» (защита Windows, античит-драйвер).</li>
+      <li>Модули с проверкой подписи, токен и права, переменные окружения, открытые хэндлы, карта памяти с кучами и стеками, окна процесса, поиск хэндла или DLL, «прицел» для поиска процесса по окну.</li>
+    </ul>
+    <h4>Governor-сервис — уникальная функция</h4>
+    <ul>
+      <li>Ступенчатое понижение: приоритет → EcoQoS → жёсткий CPU-cap при длительной перегрузке; откат при восстановлении.</li>
+      <li><strong>Memory guard</strong>: при RAM &gt; 90% сбрасываются working sets фоновых приложений (ничего не закрывается).</li>
+      <li>Защита приложения переднего плана (<code class="inline">protect_foreground</code>) и резерв «спасательного» ядра.</li>
+      <li>Правила по имени/пути с условиями <code class="inline">cpu_above</code>, <code class="inline">memory_above_mb</code>, <code class="inline">gpu_above</code> и действиями (включая <code class="inline">kill</code>).</li>
+      <li>Бюджеты CPU/RAM на приложение, kill-list и «паника» (Ctrl+Shift+K), <strong>блок-лист через IFEO</strong>, режим игры с откатом.</li>
+      <li>Долгосрочная статистика в SQLite с линейным трендом и R²: хронический CPU и растущая память помечаются как утечка.</li>
+      <li>Порты: владелец, клиенты, распознавание ~75 dev-портов, «освободить порт»; ETW-байты по программам, закрытие TCP, блокировка сети двумя правилами Firewall.</li>
+      <li>Монитор Docker-контейнеров, анализ диска, обновление Store/WinGet с проверкой SHA-256, <strong>Telegram-бот</strong>, датчики и охлаждение (duty, кривые, пресеты), гибридные CPU с P/E-ядрами.</li>
+    </ul>
+    <h4>AI и интеграции</h4>
+    <ul>
+      <li>Встроенный ассистент: 11 провайдеров + Ollama/LM Studio, ключи под DPAPI, секреты маскируются, доступ к управлению не выдаётся.</li>
+      <li><strong>MCP-сервер</strong> <code class="inline">wtm mcp</code>: 20+ инструментов, в режиме <code class="inline">--allow-control</code> — управление процессами с проверкой <code class="inline">create_time</code>.</li>
+      <li>Может заменить штатный диспетчер по Ctrl+Shift+Esc; 27 языков.</li>
+    </ul>
+    <h4>Ограничения</h4>
+    <ul>
+      <li>Только Windows x64.</li>
+      <li>Служба работает от SYSTEM — это серьёзная поверхность атаки; поэтому по умолчанию включён <strong>dry-run</strong>.</li>
+      <li>Статус early release; часть аппаратных функций (запись оборотов вентиляторов) не валидирована.</li>
+      <li>GPU показывается, но без разбора VRAM на «веса / KV-кэш / compute» и без распознавания моделей.</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>gputaskman <span class="tag mit" style="margin:0">MIT</span> <a href="https://github.com/shanselman/gputaskman" target="_blank" rel="noopener">github.com/shanselman/gputaskman</a></summary>
+    <p>«htop для того, что внутри GPU, а не только насколько он заполнен». Терминальный монитор, склеивающий счётчики GPU с распознаванием рантаймов и LLM-моделей.</p>
+    <h4>Устройство и процессы</h4>
+    <ul>
+      <li>VRAM (total/used/free), загрузка, температура, питание, такты SM/GFX, активность памяти, PCIe, вентилятор, троттлинг, версии драйвера и CUDA, PCIe-генерация, compute capability, power/clock limits.</li>
+      <li>По процессам: dedicated VRAM (Local), GPU-доступная системная RAM (Shared), оценка <strong>Paged</strong> = <code class="inline">max(commit − local − non-local, 0)</code>, активность движков (3D/Compute/Copy/Video), рантаймы (CUDA, HIP, Vulkan, Direct3D, ggml, ONNX Runtime, Metal).</li>
+      <li>Аккуратный учёт памяти: используются <code class="inline">Local Usage</code>/<code class="inline">Non Local Usage</code> вместо <code class="inline">Dedicated Usage</code>, чтобы не считать одну поверхность DWM трижды; при превышении суммы над ёмкостью адаптера полоса нормализуется, легенда остаётся «сырой».</li>
+      <li>По потокам: полоса потоков, 60-семпловые истории CPU и RAM, топ по RAM и CPU.</li>
+    </ul>
+    <h4>LLM-разбор</h4>
+    <ul>
+      <li>По GGUF-заголовкам определяется тип модели: LLM, decision, embedding, speech, diffusion.</li>
+      <li>Считаются веса, ожидаемая KV-цена и размеры compute-буферов.</li>
+      <li>Поддержаны llama.cpp / llama-server, Ollama, LM Studio, vLLM, Foundry Local, stable-diffusion.cpp, Handy, Whisper/ONNX-подобные.</li>
+      <li>У каждой модели показан уровень доказательства: <code class="inline">api</code>, <code class="inline">mapped</code>, <code class="inline">cmdline</code>, <code class="inline">path-arg</code>, <code class="inline">installed</code>; <code class="inline">path-arg</code> подтверждением не считается.</li>
+      <li>Локальные API рантаймов опрашиваются на своём localhost: <code class="inline">/props</code>, <code class="inline">/slots</code>, <code class="inline">/metrics</code>, <code class="inline">/v1/models</code>, <code class="inline">/api/ps</code>. Ключ llama-server используется как bearer и нигде не сохраняется.</li>
+    </ul>
+    <h4>Сценарии и платформы</h4>
+    <ul>
+      <li>TUI, <code class="inline">--once</code>, <code class="inline">--json</code>, <code class="inline">--list-gpus</code>, <code class="inline">--gpu N</code>, <code class="inline">diff</code>, <code class="inline">record</code>, <code class="inline">replay</code>, <code class="inline">summary</code>, <code class="inline">--no-host</code>, <code class="inline">--no-system</code>.</li>
+      <li>Windows (WDDM, NVML, ADL/AMD SMI), Linux (NVML; DRM <code class="inline">amdgpu</code>/<code class="inline">i915</code>/<code class="inline">xe</code>), WSL (счётчики Windows-хоста + сопоставление контекстов <code class="inline">vmwp.exe</code>), macOS Apple Silicon (Metal + <code class="inline">footprint</code>).</li>
+      <li>Неизвестное значение — это <code class="inline">null</code>/«нет данных», а не ноль; в JSON есть <code class="inline">started_at</code>, чтобы переиспользование PID не давало ложных изменений.</li>
+    </ul>
+    <h4>Ограничения</h4>
+    <ul>
+      <li>Только чтение и только терминал: ни дерева процессов, ни управления, ни GUI.</li>
+      <li>CPU/RAM/диск/сеть — обзорно (колонки RAM и CPU%, панель System).</li>
+      <li>Проект young (0.4.4): AMD/Intel на нативном Linux, <code class="inline">xe</code>, TCC-карты, multi-GPU и WSL-сопоставление авторы сами помечают как невалидированные.</li>
+      <li>В JSON и скриншотах видны пути, аргументы командной строки, имена моделей и локальные порты — перед публикацией нужно вычищать.</li>
+    </ul>
+  </details>
+</section>
+
+<section id="axes">
+  <h2><span class="num">04</span>Сравнение по глубоким осям</h2>
+
+  <h3>GPU и видеопамять</h3>
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr>
+          <th class="rowhead">Аспект</th>
+          <th class="proj-col">System Informer</th>
+          <th class="proj-col">Task Explorer</th>
+          <th class="proj-col">RustWTM</th>
+          <th class="proj-col">gputaskman</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowhead">Общая загрузка GPU</td><td>есть</td><td>есть</td><td>есть, отдельная страница</td><td>есть, 8 графиков истории</td></tr>
+        <tr><td class="rowhead">VRAM по процессам</td><td>через ExtendedTools</td><td>GPU-панель</td><td>dedicated/shared</td><td><strong>Local / Shared / Paged</strong></td></tr>
+        <tr><td class="rowhead">Движки 3D / Compute / Video</td><td>частично</td><td>частично</td><td>да, с поиском по типам</td><td>да, с дельтой загрузки</td></tr>
+        <tr><td class="rowhead">Температура / питание / троттлинг</td><td>через плагин</td><td>частично</td><td>да</td><td>да</td></tr>
+        <tr><td class="rowhead">Защита от двойного счёта (DWM)</td><td>нет</td><td>нет</td><td>нет</td><td><strong>да</strong></td></tr>
+        <tr><td class="rowhead">Multi-GPU</td><td>частично</td><td>частично</td><td>страница на каждый GPU</td><td><strong>свой блок на каждый адаптер</strong></td></tr>
+        <tr><td class="rowhead">LLM-модели: веса, KV-кэш</td><td>нет</td><td>нет</td><td>нет</td><td><strong>да, с уровнями доказательства</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Память</h3>
+  <ul>
+    <li><strong>System Informer / Task Explorer</strong> — показывают <em>структуру</em> памяти процесса (регионы, кучи, PEB/TEB, private/commit), умеют её редактировать и искать по строкам.</li>
+    <li><strong>RustWTM</strong> — даёт <em>системную</em> картину (composition, standby/modified, kernel pools, hardware reserved), ловит утечки по тренду, умеет trim и ставить лимиты.</li>
+    <li><strong>gputaskman</strong> — RAM только как контекст: working set и CPU% на фоне GPU, с явной оговоркой, что это не private working set диспетчера Windows.</li>
+  </ul>
+
+  <h3>Дерево процессов и инспекция</h3>
+  <p>Разрыв максимальный: System Informer и Task Explorer дают десятки низкоуровневых панелей и глубокую работу с драйверами и хэндлами. RustWTM даёт современную «рабочую» инспекцию (детали, ожидание, подписи модулей, карта памяти, токен) и три режима списка. gputaskman процессами не занимается вообще — он про GPU.</p>
+
+  <h3>Управление и привилегии</h3>
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr><th class="rowhead">Модель управления</th><th class="proj-col">Кто так умеет</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowhead">Ручное управление процессами</td><td>все три GUI-проекта</td></tr>
+        <tr><td class="rowhead">Глубокое управление (хэндлы, память, DLL, службы)</td><td>System Informer, Task Explorer</td></tr>
+        <tr class="key"><td class="rowhead">Автоматическое управление по правилам</td><td><strong>только RustWTM</strong></td></tr>
+        <tr class="key"><td class="rowhead">Ограничение ресурсов (CPU/RAM)</td><td><strong>только RustWTM</strong> (Job Objects)</td></tr>
+        <tr><td class="rowhead">Блокировка запуска программ</td><td>Task Explorer (драйвер), RustWTM (IFEO)</td></tr>
+        <tr class="key"><td class="rowhead">Служба под SYSTEM</td><td><strong>только RustWTM</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Автоматизация, скрипты, AI</h3>
+  <ul>
+    <li><strong>RustWTM</strong> — единственный с CLI, конфигом TOML, правилами, MCP-сервером и встроенным AI-ассистентом; плюс Telegram-бот как удалённый интерфейс.</li>
+    <li><strong>gputaskman</strong> — единственный с «аналитической» автоматизацией: <code class="inline">diff</code>/<code class="inline">record</code>/<code class="inline">replay</code>/<code class="inline">summary</code> дают честный ответ «что изменилось с VRAM» без GUI.</li>
+    <li><strong>System Informer / Task Explorer</strong> — автоматизации нет; у Task Explorer есть удалённый сервер, но это мониторинг, а не скриптование.</li>
+  </ul>
+
+  <h3>Кроссплатформенность</h3>
+  <p>Здесь выигрывают не те, о ком обычно думают: <strong>gputaskman</strong> работает на Windows/Linux/WSL/macOS, <strong>Task Explorer</strong> — на Windows и Linux, а <strong>System Informer</strong> и <strong>RustWTM</strong> — только на Windows. При этом RustWTM компенсирует отсутствие Linux собственными средствами автоматизации.</p>
+
+  <h3>Зрелость и риски</h3>
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr><th class="rowhead">Проект</th><th class="proj-col">Зрелость</th><th class="proj-col">Главный риск</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowhead">System Informer</td><td>Высокая, стабильная база</td><td>Плотный UI, нет автоматизации, драйвер требует доверия</td></tr>
+        <tr class="key"><td class="rowhead">Task Explorer</td><td>Высокая, активно развивается</td><td><strong>GPL-3.0</strong> + платная удалёнка (сертификат)</td></tr>
+        <tr class="key"><td class="rowhead">RustWTM</td><td>Средняя (0.35.0, early release)</td><td><strong>Служба SYSTEM</strong>, dry-run по умолчанию, железо не валидировано</td></tr>
+        <tr><td class="rowhead">gputaskman</td><td>Средняя (0.4.4), TUI</td><td>Неполная валидация AMD/Intel/TCC/multi-GPU, приватность выгрузок</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="matrix">
+  <h2><span class="num">05</span>Матрица возможностей</h2>
+  <p class="sub">Построчная проверка «есть ли это вообще» — быстрый способ увидеть пересечения и пробелы.</p>
+
+  <div class="legend">
+    <span><b class="yes">✔</b> — есть и работает</span>
+    <span><b class="part">◐</b> — есть частично или с ограничениями</span>
+    <span><b class="no">✖</b> — нет</span>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr>
+          <th class="rowhead">Возможность</th>
+          <th class="proj-col">System Informer</th>
+          <th class="proj-col">Task Explorer</th>
+          <th class="proj-col">RustWTM</th>
+          <th class="proj-col">gputaskman</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowhead">Дерево процессов</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Список + сортировка по всем колонкам</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td></tr>
+        <tr><td class="rowhead">Режим «одна строка на приложение»</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Стек потока / трассировка стека</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Редактор памяти и поиск строк</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Инъекция / выгрузка DLL</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Работа с хэндлами</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Управление службами (создать/старт/стоп)</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Привилегии и SID процесса</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Карта памяти (кучи, стеки, PEB/TEB)</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Модули с проверкой подписи</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Сеть по процессам (ETW)</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Закрытие соединения / блокировка сети</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Диск: активность по программам</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Анализ занятого места на диске</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Порты и «освободить порт»</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">GPU: общая загрузка и память</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr class="key"><td class="rowhead">GPU: VRAM по процессам</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">GPU: движки 3D / Compute / Video</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">GPU: температура / питание / троттлинг</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr class="key"><td class="rowhead">GPU: распознавание LLM-моделей и KV-кэша</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">Multi-GPU</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">Датчики температуры / RPM / напряжения</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">Управление охлаждением (duty, кривые)</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Температуры CPU / GPU / диска</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr class="key"><td class="rowhead">Автоматическое троттлинг и приоритеты</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr class="key"><td class="rowhead">Лимиты CPU / RAM на приложение</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Блокировка запуска программ</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr class="key"><td class="rowhead">Правила по условиям (CPU / RAM / GPU)</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Долгосрочная статистика и тренды</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td></tr>
+        <tr class="key"><td class="rowhead">CLI</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">JSON / машиночитаемый вывод</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td></tr>
+        <tr class="key"><td class="rowhead">MCP-сервер / интеграция с ИИ-агентами</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr class="key"><td class="rowhead">Встроенный AI-ассистент</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Удалённый мониторинг машин</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Плагины / расширяемость</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td><td class="mark-cell part">◐</td></tr>
+        <tr class="key"><td class="rowhead">Linux</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">macOS</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">WSL-хостинг</td><td class="mark-cell no">✖</td><td class="mark-cell part">◐</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">Русский язык</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+        <tr><td class="rowhead">Портативный запуск без установки</td><td class="mark-cell yes">✔</td><td class="mark-cell yes">✔</td><td class="mark-cell part">◐</td><td class="mark-cell yes">✔</td></tr>
+        <tr><td class="rowhead">Замена Ctrl+Shift+Esc</td><td class="mark-cell no">✖</td><td class="mark-cell no">✖</td><td class="mark-cell yes">✔</td><td class="mark-cell no">✖</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="takeaways">
+  <h2><span class="num">06</span>Что взять на вооружение для hw.chekak.store</h2>
+  <p class="sub">Цель проекта — комбайн из датчиков, VRAM, температур и нагрузки. Ни один из четырёх не закрывает её целиком, но у каждого есть заимствуемый кусок.</p>
+
+  <div class="callout">
+    <ul>
+      <li><strong>Семантика счётчиков GPU — из gputaskman.</strong> Разделять <code class="inline">Local Usage</code> и <code class="inline">Non Local Usage</code>, не складывать <code class="inline">Dedicated Usage</code> (иначе одна поверхность DWM считается трижды), показывать неизвестное как «нет данных», а не ноль, и подписывать каждое число источником: WDDM / NVML / ADL / DRM.</li>
+      <li><strong>Модель «измерено / выведено / оценено» — из gputaskman.</strong> Уровень уверенности с указанием источника: мониторинг железа врёт, если не показывать, откуда взялась цифра.</li>
+      <li><strong>Дерево процессов и панели — из System Informer / Task Explorer.</strong> Даже минимальная связка «процесс → потоки → память → хэндлы → модули» отличает монитор от «просто набора счётчиков».</li>
+      <li><strong>Политики и лимиты — из RustWTM.</strong> Наблюдатель, который умеет вмешиваться по правилам (порог CPU/RAM/GPU → действие), — естественное продолжение комбайна; реализовывать в dry-run по умолчанию.</li>
+      <li><strong>Форматы данных — из gputaskman (<code class="inline">diff</code>/<code class="inline">record</code>/<code class="inline">summary</code>) и RustWTM (JSON из CLI).</strong> Если данные пойдут наружу через API или бота, machine-readable вывод обязателен.</li>
+      <li><strong>Плагины и открытый API — из System Informer.</strong> Расширяемость важнее закрытого набора виджетов.</li>
+      <li><strong>Юридическая оговорка.</strong> Task Explorer под GPL-3.0 — не копировать в MIT-проект hw.chekak.store без переписывания по своему дизайну. Остальные три — MIT, идеи и фрагменты можно брать со ссылкой на авторов.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="choose">
+  <h2><span class="num">07</span>Как выбрать под задачу</h2>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th class="rowhead">Если нужно…</th><th class="proj-col">Берите</th></tr></thead>
+      <tbody>
+        <tr><td class="rowhead">Разобраться, что делает подозрительный процесс (хэндлы, кучи, драйверы, службы)</td><td>System Informer</td></tr>
+        <tr><td class="rowhead">Максимум панелей и современный Qt-интерфейс, плюс Linux и удалёнка</td><td>Task Explorer (помня про GPL)</td></tr>
+        <tr><td class="rowhead">Автоматически приводить ПК в порядок + AI/MCP + управление с телефона</td><td>RustWTM</td></tr>
+        <tr><td class="rowhead">Понять, кто занимает видеопамять и какая модель запущена</td><td>gputaskman</td></tr>
+        <tr><td class="rowhead">Замена штатного диспетчера на Windows 11 «как в Microsoft»</td><td>RustWTM</td></tr>
+        <tr><td class="rowhead">Один инструмент на Windows + Linux для админской работы</td><td>Task Explorer</td></tr>
+        <tr><td class="rowhead">Поставка в продукт с MIT-лицензией</td><td>RustWTM / gputaskman / System Informer (не Task Explorer)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="method">
+  <h2><span class="num">08</span>Методика, версии и источники</h2>
+  <p class="sub">Разбор построен по исходному коду и документации локальных клонов на 18 ноября 2026 года. Живое тестирование не проводилось.</p>
+
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr><th class="rowhead">Проект</th><th class="proj-col">Коммит</th><th class="proj-col">Дата</th><th class="proj-col">Тег</th><th class="proj-col">Репозиторий</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowhead">System Informer</td><td><code class="inline">952a0e7a4</code></td><td>2026-11-18</td><td><code class="inline">v4.0.26241.138-920-g952a0e7a4</code></td><td><a href="https://github.com/winsiderss/systeminformer" target="_blank" rel="noopener">winsiderss/systeminformer</a></td></tr>
+        <tr><td class="rowhead">Task Explorer</td><td><code class="inline">9f3f95d</code></td><td>2026-10-12</td><td><code class="inline">v2.0.1</code></td><td><a href="https://github.com/DavidXanatos/TaskExplorer" target="_blank" rel="noopener">DavidXanatos/TaskExplorer</a></td></tr>
+        <tr><td class="rowhead">RustWTM</td><td><code class="inline">cd48c11</code></td><td>2026-11-16</td><td><code class="inline">v0.35.0</code></td><td><a href="https://github.com/RustWTM/RustWTM" target="_blank" rel="noopener">RustWTM/RustWTM</a></td></tr>
+        <tr><td class="rowhead">gputaskman</td><td><code class="inline">ba765f9</code></td><td>2026-11-17</td><td><code class="inline">v0.4.4</code></td><td><a href="https://github.com/shanselman/gputaskman" target="_blank" rel="noopener">shanselman/gputaskman</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Что было прочитано</h3>
+  <ul>
+    <li><code class="inline">../systeminformer</code> — README.md, README.txt, LICENSE.txt, дерево <code class="inline">SystemInformer/*.c</code> (состав панелей), каталог <code class="inline">plugins/</code> (12 плагинов), <code class="inline">KSystemInformer/</code> (kernel-драйвер).</li>
+    <li><code class="inline">../TaskExplorer</code> — README.md, CHANGELOG.md, LICENSE (GPL-3.0), каталоги <code class="inline">GUI/TaskInfo</code> (21 модуль), <code class="inline">GUI/SystemInfo</code> (16), <code class="inline">GUI/Models</code> (17).</li>
+    <li><code class="inline">../RustWTM</code> — README.md (Features, Release, Architecture), <code class="inline">docs/</code> (54 документа), LICENSE.</li>
+    <li><code class="inline">../gputaskman</code> — README.md (1335 строк), AGENTS.md, LICENSE, состав модулей из раздела Development.</li>
+  </ul>
+
+  <h3>Ограничения разбора</h3>
+  <ul>
+    <li>Функции, заявленные авторами, но <strong>не подтверждённые на железе</strong> (AMD/Intel на Linux, TCC-карты, <code class="inline">xe</code>, multi-GPU, запись оборотов вентиляторов), учтены как «заявлено, но не подтверждено».</li>
+    <li>Поведение конкретных сборок Windows и драйверов может отличаться от описанного.</li>
+    <li>Сравнение — статический анализ кода, README и CHANGELOG; живые замеры на этой машине не выполнялись.</li>
+  </ul>
+
+  <h3>Лицензии</h3>
+  <ul>
+    <li>System Informer — MIT, Winsider Seminars &amp; Solutions, Inc.</li>
+    <li>Task Explorer — GPL-3.0, David Xanatos.</li>
+    <li>RustWTM — MIT, OXOGNET OÜ (Эстония).</li>
+    <li>gputaskman — MIT, Scott Hanselman.</li>
+    <li>Документ hw.chekak.store — MIT (см. LICENSE).</li>
+  </ul>
+</section>
+
+<div class="foot">
+  <p><strong>hw.chekak.store</strong> — «ЧёКак Железо»: датчики, видеопамять, температуры и нагрузка на компоненты.
+  Полный текст разбора: <a href="README.md">README.md</a>. Файл самодостаточен: открывается двойным щелчком в любом браузере, внешние ресурсы не нужны.</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+[package]
+name = "mcpad-theme"
+description = "JSON-темы MCPad: палитра, метрики и применение в рантайме"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
