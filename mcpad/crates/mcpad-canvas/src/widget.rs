@@ -216,8 +216,9 @@ fn draw_edges(
     theme: &Theme,
 ) {
     if !visible.is_empty() {
-        let edge_color = color(theme.palette.edge);
-        let stroke = Stroke::new(1.5, edge_color);
+        // Рёбра заметно ярче рамок карточек: иначе иерархия не читается.
+        let edge_color = color(theme.palette.muted).gamma_multiply(0.8);
+        let stroke = Stroke::new(1.6, edge_color);
 
         let positions: HashMap<u32, &NodeLayout> =
             layout_nodes.iter().map(|node| (node.id, node)).collect();

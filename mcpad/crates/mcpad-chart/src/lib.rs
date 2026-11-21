@@ -168,19 +168,21 @@ pub fn plot_series(
         painter.add(egui::Shape::line(path, Stroke::new(1.5, spec.color)));
     }
 
-    // Шкала над графиком и время под ним.
+    // Шкала значений — внутри графика, в правом верхнем углу. Снаружи она
+    // налезала бы на заголовок и текущее значение, которые рисует вызывающий.
     let span_text = format!("{:.1}–{:.1} {}", scale.min, scale.max, spec.unit);
     painter.text(
-        rect.left_top() + Vec2::new(0.0, -4.0),
-        egui::Align2::LEFT_TOP,
+        rect.right_top() + Vec2::new(-4.0, 4.0),
+        egui::Align2::RIGHT_TOP,
         &span_text,
         egui::FontId::monospace(11.0),
         text_color,
     );
 
+    // Длина окна — тоже внутри, в левом нижнем углу.
     let time_text = format!("{} с", (to.saturating_sub(from)) / 1000);
     painter.text(
-        rect.left_bottom() + Vec2::new(0.0, 4.0),
+        rect.left_bottom() + Vec2::new(4.0, -4.0),
         egui::Align2::LEFT_BOTTOM,
         time_text,
         egui::FontId::monospace(11.0),

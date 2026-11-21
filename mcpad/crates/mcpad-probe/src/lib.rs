@@ -11,7 +11,7 @@
 //! Один и тот же снимок читают GUI, CLI, MCP и удалённый клиент, поэтому все
 //! пробы обязаны отдавать одну и ту же модель.
 
-use mcpad_core::{Error, ModuleLink, ProcessDetails, Snapshot, UnavailableReason};
+use mcpad_core::{Error, ModuleLink, Priority, ProcessDetails, Snapshot, UnavailableReason};
 
 /// Целевая платформа.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -92,6 +92,10 @@ pub enum Capability {
     SecurityToken,
     /// Контейнеры.
     Containers,
+    /// Завершение процессов.
+    ProcessControl,
+    /// Смена приоритета процесса.
+    ProcessPriority,
 }
 
 impl Capability {
@@ -123,6 +127,8 @@ impl Capability {
             Capability::MemoryMap => "memory_map",
             Capability::SecurityToken => "security_token",
             Capability::Containers => "containers",
+            Capability::ProcessControl => "process_control",
+            Capability::ProcessPriority => "process_priority",
         }
     }
 
@@ -156,6 +162,8 @@ impl Capability {
             MemoryMap,
             SecurityToken,
             Containers,
+            ProcessControl,
+            ProcessPriority,
         ]
     }
 }
@@ -219,6 +227,24 @@ pub trait PlatformProbe: Send + Sync {
     fn module_links(&self, _pid: u32) -> Result<Vec<ModuleLink>, Error> {
         Err(Error::Unsupported(
             "перечисление модулей для этой платформы не реализовано".to_string(),
+        ))
+    }
+
+    /// Завершает процесс.
+    ///
+    /// Действие по умолчанию не поддерживается: не каждая платформа и не
+    /// каждый процесс дают на него права. Проб, который умеет, реализует
+    /// метод; остальные отвечают отказом с причиной.
+    fn terminate_process(&self, _pid: u32) -> Result<(), Error> {
+        Err(Error::Unsupported(
+            "завершение процессов для этой платформы не реализовано".to_string(),
+        ))
+    }
+
+    /// Меняет приоритет процесса.
+    fn set_priority(&self, _pid: u32, _priority: Priority) -> Result<(), Error> {
+        Err(Error::Unsupported(
+            "смена приоритета для этой платформы не реализовано".to_string(),
         ))
     }
 

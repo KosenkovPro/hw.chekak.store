@@ -19,6 +19,7 @@ mcpad-theme.workspace = true
 mcpad-canvas.workspace = true
 eframe.workspace = true
 egui.workspace = true
+regex.workspace = true
 
 [target.'cfg(target_os = "windows")'.dependencies]
 mcpad-backends-windows.workspace = true

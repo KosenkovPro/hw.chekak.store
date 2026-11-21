@@ -9,10 +9,14 @@
 pub mod parse;
 
 #[cfg(target_os = "macos")]
+mod control;
+#[cfg(target_os = "macos")]
 mod sys;
 
 use mcpad_core::Error;
 
+#[cfg(target_os = "macos")]
+use mcpad_core::Priority;
 #[cfg(target_os = "macos")]
 use mcpad_core::ProcessDetails;
 #[cfg(target_os = "macos")]
@@ -40,6 +44,8 @@ impl PlatformProbe for MacOsProbe {
             Capability::ExePath,
             Capability::SystemCpu,
             Capability::SystemMemory,
+            Capability::ProcessControl,
+            Capability::ProcessPriority,
         ]
     }
 
@@ -48,6 +54,9 @@ impl PlatformProbe for MacOsProbe {
             // Командная строка на macOS читается только с правами root.
             Capability::CommandLine => Support::Partial,
             Capability::MemoryPrivate => Support::Partial,
+            // Завершение и приоритет доступны только для процессов, на
+            // которые у пользователя есть права.
+            Capability::ProcessControl | Capability::ProcessPriority => Support::Partial,
             Capability::IoCounters
             | Capability::HandleCount
             | Capability::GpuPerProcess
@@ -76,6 +85,14 @@ impl PlatformProbe for MacOsProbe {
 
     fn process_details(&self, pid: u32) -> Result<ProcessDetails, Error> {
         Ok(sys::query_details(pid))
+    }
+
+    fn terminate_process(&self, pid: u32) -> Result<(), Error> {
+        control::terminate(pid)
+    }
+
+    fn set_priority(&self, pid: u32, priority: Priority) -> Result<(), Error> {
+        control::set_priority(pid, priority)
     }
 }
 

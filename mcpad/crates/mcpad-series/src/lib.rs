@@ -146,6 +146,15 @@ impl Series {
         self.samples.iter().rev().find_map(|sample| sample.value)
     }
 
+    /// Значение самого свежего отсчёта.
+    ///
+    /// В отличие от [`Series::last_value`], здесь «известно раньше» не
+    /// подменяет «неизвестно сейчас»: если последний отсчёт — пропуск, то
+    /// результат `None`.
+    pub fn latest_value(&self) -> Option<f64> {
+        self.samples.back().and_then(|sample| sample.value)
+    }
+
     /// Очищает буфер.
     pub fn clear(&mut self) {
         self.samples.clear();
@@ -304,6 +313,17 @@ mod tests {
         series.push_value(1, 5.0);
         series.push_gap(2);
         assert_eq!(series.last_value(), Some(5.0));
+    }
+
+    #[test]
+    fn latest_value_does_not_skip_gap() {
+        let mut series = Series::with_capacity(4);
+        series.push_value(1, 5.0);
+        series.push_gap(2);
+        // «Известно раньше» не подменяет «неизвестно сейчас».
+        assert_eq!(series.latest_value(), None);
+        series.push_value(3, 7.0);
+        assert_eq!(series.latest_value(), Some(7.0));
     }
 
     #[test]

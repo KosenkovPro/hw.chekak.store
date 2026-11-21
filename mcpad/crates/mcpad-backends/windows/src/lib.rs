@@ -12,13 +12,15 @@
 
 #![cfg(windows)]
 
+mod control;
 mod details;
 mod modules;
 mod parse;
 mod system;
 
 use mcpad_core::{
-    Counter, Error, ModuleLink, ProcessDetails, Snapshot, Source, SystemInfo, UnavailableReason,
+    Counter, Error, ModuleLink, Priority, ProcessDetails, Snapshot, Source, SystemInfo,
+    UnavailableReason,
 };
 use mcpad_probe::{Capability, Platform, PlatformProbe, Support};
 use windows::Win32::Foundation::FILETIME;
@@ -57,6 +59,8 @@ impl PlatformProbe for WindowsProbe {
             Capability::SystemCpu,
             Capability::SystemMemory,
             Capability::SecurityToken,
+            Capability::ProcessControl,
+            Capability::ProcessPriority,
         ]
     }
 
@@ -70,6 +74,11 @@ impl PlatformProbe for WindowsProbe {
             Capability::ProcessModules => {
                 // Список модулей доступен для процессов, которые удалось
                 // открыть; у защищённых процессов доступа нет.
+                Support::Partial
+            }
+            Capability::ProcessControl | Capability::ProcessPriority => {
+                // Действия доступны только для процессов, на которые у
+                // пользователя есть права.
                 Support::Partial
             }
             Capability::GpuPerProcess
@@ -105,6 +114,14 @@ impl PlatformProbe for WindowsProbe {
 
     fn module_links(&self, pid: u32) -> Result<Vec<ModuleLink>, Error> {
         modules::module_links(pid)
+    }
+
+    fn terminate_process(&self, pid: u32) -> Result<(), Error> {
+        control::terminate(pid)
+    }
+
+    fn set_priority(&self, pid: u32, priority: Priority) -> Result<(), Error> {
+        control::set_priority(pid, priority)
     }
 }
 

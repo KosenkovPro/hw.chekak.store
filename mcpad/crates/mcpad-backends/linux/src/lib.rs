@@ -10,12 +10,16 @@
 pub mod parse;
 
 #[cfg(target_os = "linux")]
+mod control;
+#[cfg(target_os = "linux")]
 mod sys;
 
 use mcpad_core::Error;
 
 #[cfg(target_os = "linux")]
 use mcpad_core::ModuleLink;
+#[cfg(target_os = "linux")]
+use mcpad_core::Priority;
 #[cfg(target_os = "linux")]
 use mcpad_core::ProcessDetails;
 #[cfg(target_os = "linux")]
@@ -47,6 +51,8 @@ impl PlatformProbe for LinuxProbe {
             Capability::ExePath,
             Capability::SystemCpu,
             Capability::SystemMemory,
+            Capability::ProcessControl,
+            Capability::ProcessPriority,
         ]
     }
 
@@ -58,6 +64,9 @@ impl PlatformProbe for LinuxProbe {
             // Модули берутся из /proc/<pid>/maps: список видимых файлов, а не
             // перечень загрузчика, и для чужих процессов может быть закрыт.
             Capability::ProcessModules => Support::Partial,
+            // Завершение и приоритет доступны только для процессов, на
+            // которые у пользователя есть права.
+            Capability::ProcessControl | Capability::ProcessPriority => Support::Partial,
             Capability::GpuPerProcess
             | Capability::GpuDevice
             | Capability::GpuEngines
@@ -87,6 +96,14 @@ impl PlatformProbe for LinuxProbe {
 
     fn module_links(&self, pid: u32) -> Result<Vec<ModuleLink>, Error> {
         sys::module_links(pid)
+    }
+
+    fn terminate_process(&self, pid: u32) -> Result<(), Error> {
+        control::terminate(pid)
+    }
+
+    fn set_priority(&self, pid: u32, priority: Priority) -> Result<(), Error> {
+        control::set_priority(pid, priority)
     }
 }
 

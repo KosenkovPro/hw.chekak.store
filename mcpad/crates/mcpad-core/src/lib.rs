@@ -25,7 +25,7 @@ pub mod units;
 pub use counter::{Confidence, Counter, Source, UnavailableReason};
 pub use error::Error;
 pub use module::ModuleLink;
-pub use process::{ProcessDetails, ProcessInfo, ProcessKey};
+pub use process::{Priority, ProcessDetails, ProcessInfo, ProcessKey};
 pub use snapshot::{SCHEMA_VERSION, Snapshot};
 pub use system::SystemInfo;
 pub use tree::ProcessTree;

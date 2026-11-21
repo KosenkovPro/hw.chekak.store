@@ -7,8 +7,12 @@
 //! Главное правило — то же, что и в ядре: **пропуск измерения остаётся
 //! пропуском**. Если счётчик был недоступен, в буфер кладётся `None`, и на
 //! графике это разрыв, а не линия на нуле.
+//!
+//! Второе правило: **завершившийся процесс исчезает из истории**. Иначе в
+//! топе по CPU навсегда висели бы старые значения уже умерших процессов —
+//! выглядит как живые, а на самом деле это останки последнего измерения.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use mcpad_core::Snapshot;
 use mcpad_series::{Series, TimeSpan, Timeline};
@@ -31,6 +35,8 @@ pub struct PerfHistory {
     pub memory_used: Series,
     /// Доля CPU по процессам, проценты.
     pub processes: HashMap<u32, Series>,
+    /// Имена отслеживаемых процессов.
+    names: HashMap<u32, String>,
     /// Окно времени и курсор.
     pub timeline: Timeline,
     /// Момент последнего снимка, миллисекунды Unix.
@@ -43,6 +49,7 @@ impl PerfHistory {
             system_cpu: Series::with_capacity(CAPACITY),
             memory_used: Series::with_capacity(CAPACITY),
             processes: HashMap::new(),
+            names: HashMap::new(),
             timeline: Timeline::new(TimeSpan::OneMinute),
             last_at_unix_ms: 0,
         }
@@ -63,6 +70,12 @@ impl PerfHistory {
             None => self.memory_used.push_gap(at),
         }
 
+        // Живые процессы: ряды завершившихся удаляем. Иначе в топе навсегда
+        // висели бы старые значения CPU уже умерших процессов.
+        let alive: HashSet<u32> = snapshot.processes.iter().map(|p| p.key.pid).collect();
+        self.processes.retain(|pid, _| alive.contains(pid));
+        self.names.retain(|pid, _| alive.contains(pid));
+
         // Известные значения CPU по процессам.
         let mut known: HashMap<u32, f64> = HashMap::new();
         let mut ranked: Vec<(u32, f64)> = Vec::new();
@@ -82,6 +95,8 @@ impl PerfHistory {
         }
 
         // Обновляем уже отслеживаемых: значение есть — пишем его, нет — пропуск.
+        // Имена запоминаем только для отслеживаемых: иначе словарь разрастался
+        // бы вместе со всеми процессами системы.
         let tracked: Vec<u32> = self.processes.keys().copied().collect();
         for pid in tracked {
             let value = known.get(&pid).copied();
@@ -90,6 +105,9 @@ impl PerfHistory {
                     Some(value) => series.push_value(at, value),
                     None => series.push_gap(at),
                 }
+            }
+            if let Some(process) = snapshot.process(pid) {
+                self.names.insert(pid, process.name.clone());
             }
         }
 
@@ -101,19 +119,44 @@ impl PerfHistory {
         self.processes.get(&pid)
     }
 
-    /// Процессы с последним известным значением CPU, от большего к меньшему.
+    /// Имя отслеживаемого процесса.
+    pub fn name(&self, pid: u32) -> Option<&str> {
+        self.names.get(&pid).map(String::as_str)
+    }
+
+    /// Последние значения ряда — для мини-графика в таблице.
+    ///
+    /// Значения без измерения остаются `None`: график покажет разрыв, а не
+    /// линию на нуле.
+    pub fn recent_values(&self, pid: u32, count: usize) -> Vec<Option<f64>> {
+        match self.processes.get(&pid) {
+            Some(series) => {
+                let values: Vec<Option<f64>> =
+                    series.samples().map(|sample| sample.value).collect();
+                let start = values.len().saturating_sub(count);
+                values[start..].to_vec()
+            }
+            None => Vec::new(),
+        }
+    }
+
+    /// Процессы с последним измеренным значением CPU, от большего к меньшему.
+    ///
+    /// Берётся значение самого свежего отсчёта: если последнее измерение
+    /// неизвестно — процесс в топ не попадает. «Неизвестно» не значит «ноль», и
+    /// подменять его старым числом тоже нельзя.
     pub fn top_processes(&self, limit: usize) -> Vec<(u32, f64)> {
         let mut values: Vec<(u32, f64)> = self
             .processes
             .iter()
-            .filter_map(|(pid, series)| series.last_value().map(|value| (*pid, value)))
+            .filter_map(|(pid, series)| series.latest_value().map(|value| (*pid, value)))
             .collect();
         values.sort_by(|a, b| b.1.total_cmp(&a.1));
         values.truncate(limit);
         values
     }
 
-    /// Убирает самые старые ряды, если процессов слишком много.
+    /// Убираем самые старые ряды, если процессов слишком много.
     fn prune(&mut self) {
         while self.processes.len() > MAX_SERIES {
             let oldest = self
@@ -124,6 +167,7 @@ impl PerfHistory {
             match oldest {
                 Some(pid) => {
                     self.processes.remove(&pid);
+                    self.names.remove(&pid);
                 }
                 None => break,
             }
@@ -133,7 +177,7 @@ impl PerfHistory {
 
 impl Default for PerfHistory {
     fn default() -> Self {
-        PerfHistory::new()
+        Self::new()
     }
 }
 
@@ -273,5 +317,37 @@ mod tests {
         history.push_snapshot(&Snapshot::new(system, processes));
         // Отслеживаются только самые нагруженные, буфер остаётся небольшим.
         assert!(history.processes.len() <= TRACKED_PROCESSES);
+    }
+
+    #[test]
+    fn finished_processes_leave_the_history() {
+        let mut history = PerfHistory::new();
+        history.push_snapshot(&snapshot_with(Some(10.0), None));
+        assert!(history.processes.contains_key(&1));
+
+        // Процесса больше нет: и ряд, и имя исчезают.
+        let empty = Snapshot::new(SystemInfo::default(), Vec::new());
+        history.push_snapshot(&empty);
+
+        assert!(!history.processes.contains_key(&1));
+        assert!(history.top_processes(8).is_empty());
+        assert_eq!(history.name(1), None);
+    }
+
+    #[test]
+    fn unknown_cpu_is_not_shown_as_a_stale_number() {
+        let mut history = PerfHistory::new();
+        history.push_snapshot(&snapshot_with(Some(10.0), None));
+        // CPU больше неизвестен — в топе процесс не должен остаться со старым
+        // значением.
+        history.push_snapshot(&snapshot_with(None, None));
+        assert!(history.top_processes(8).is_empty());
+    }
+
+    #[test]
+    fn names_are_remembered_for_tracked_processes() {
+        let mut history = PerfHistory::new();
+        history.push_snapshot(&snapshot_with(Some(10.0), None));
+        assert_eq!(history.name(1), Some("p1"));
     }
 }

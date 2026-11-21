@@ -128,6 +128,78 @@ pub struct ProcessDetails {
     pub user: Option<String>,
 }
 
+/// Приоритет процесса.
+///
+/// Набор классов одинаков для всех платформ: те же шесть классов, что в
+/// Диспетчере задач Windows, в `renice` и в `ps`. Значение по умолчанию —
+/// `Normal`: его получают все процессы, если система ничего не задала.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Priority {
+    /// Низкий.
+    Low,
+    /// Ниже обычного.
+    BelowNormal,
+    /// Обычный.
+    Normal,
+    /// Выше обычного.
+    AboveNormal,
+    /// Высокий.
+    High,
+    /// Реального времени.
+    RealTime,
+}
+
+impl Priority {
+    /// Все классы в порядке от низшего к высшему.
+    pub const ALL: [Priority; 6] = [
+        Priority::Low,
+        Priority::BelowNormal,
+        Priority::Normal,
+        Priority::AboveNormal,
+        Priority::High,
+        Priority::RealTime,
+    ];
+
+    /// Класс по имени.
+    ///
+    /// Понимает английские и русские названия — как в диспетчерах задач, где
+    /// один и тот же список подписан по-разному.
+    pub fn parse(text: &str) -> Option<Self> {
+        // to_lowercase, а не to_ascii_lowercase: названия классов есть и на
+        // русском, а ASCII-версия кириллицу не трогает.
+        match text.trim().to_lowercase().as_str() {
+            "low" | "низкий" | "idle" => Some(Priority::Low),
+            "below" | "below normal" | "below_normal" | "ниже" | "ниже обычного" => {
+                Some(Priority::BelowNormal)
+            }
+            "normal" | "обычный" | "обычное" => Some(Priority::Normal),
+            "above" | "above normal" | "above_normal" | "выше" | "выше обычного" => {
+                Some(Priority::AboveNormal)
+            }
+            "high" | "высокий" => Some(Priority::High),
+            "realtime" | "real time" | "real_time" | "реального времени" => {
+                Some(Priority::RealTime)
+            }
+            _ => None,
+        }
+    }
+
+    /// Числовое значение «веса» приоритета: чем больше, тем выше класс.
+    ///
+    /// Нужно для сортировки и для сравнения: значение по умолчанию не
+    /// измерено, поэтому у процесса приоритет может быть неизвестен.
+    pub fn rank(self) -> i32 {
+        match self {
+            Priority::Low => 0,
+            Priority::BelowNormal => 1,
+            Priority::Normal => 2,
+            Priority::AboveNormal => 3,
+            Priority::High => 4,
+            Priority::RealTime => 5,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -153,5 +225,23 @@ mod tests {
         let a = ProcessKey::new(42, Some(100), Some(1));
         let b = ProcessKey::new(42, Some(100), Some(2));
         assert!(!a.same_process(&b));
+    }
+
+    #[test]
+    fn priority_parses_english_and_russian() {
+        assert_eq!(Priority::parse("normal"), Some(Priority::Normal));
+        assert_eq!(Priority::parse("Обычный"), Some(Priority::Normal));
+        assert_eq!(Priority::parse("высокий"), Some(Priority::High));
+        assert_eq!(Priority::parse("HIGH"), Some(Priority::High));
+        assert_eq!(Priority::parse("непонятно"), None);
+    }
+
+    #[test]
+    fn priority_ranks_are_ordered() {
+        let ranks: Vec<i32> = Priority::ALL
+            .iter()
+            .map(|priority| priority.rank())
+            .collect();
+        assert_eq!(ranks, vec![0, 1, 2, 3, 4, 5]);
     }
 }
